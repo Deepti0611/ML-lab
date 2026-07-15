@@ -13,7 +13,7 @@ def mean_varience_numpy(df): # function to find mean and varience of stock price
 def mean_varience(df): # function to find mean and varience of stock price manually
     X=df[['Price']].to_numpy()
     n=len(X)
-    mean=sum(X)/n #mean 
+    mean=sum(X)/n #mean of stock price
     varience=sum((X-mean)**2)/n # varience
     return mean,varience
 def exec_time(function,df):
