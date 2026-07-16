@@ -1,5 +1,5 @@
 import time
-
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
@@ -11,11 +11,12 @@ def mean_varience_numpy(df): # function to find mean and varience of stock price
     varience=np.var(df['Price'])
     return mean,varience
 def mean_varience(df): # function to find mean and varience of stock price manually
-    X=df[['Price']].to_numpy()
+    X=df['Price'].to_numpy()
     n=len(X)
     mean=sum(X)/n #mean of stock price
     varience=sum((X-mean)**2)/n # varience
     return mean,varience
+
 def exec_time(function,df):
     total_time=0
     for i in range(10):# 10 runs 
@@ -25,21 +26,100 @@ def exec_time(function,df):
         total_time+=end-start# total exexecution time for 10 runs
     avg_time=total_time/10 # average execution time for 10 runs
     return total_time, avg_time
-   
+
+
+def filter_wed(df): # function to filter only wednesday's and check mean and varience 
+    filtered_df=df.loc[df.Day=='Wed']# filter out only wednesday data
+    mean=np.mean(filtered_df['Price'])
+    varience=np.var(filtered_df['Price'])
+    return mean,varience
+
+
+def filter_apr(df): # function to filter only april month data and check mean 
+    filtered_df=df.loc[df.Month=='Apr'] # april month data
+    mean=np.mean(filtered_df['Price'])
+    varience=np.var(filtered_df['Price'])
+    return mean,varience
+
+def loss_probability(df): # loss probability using lambda 
+    loss=df['Chg%'].apply(lambda x: 1 if x<0 else 0) # loss set to 1 if Chg% negative 
+    ans=loss.sum()/len(loss) # probability
+    return ans
+
+def profit_wed(df): 
+    filtered_df=df.loc[df.Day=='Wed'] # filter out wednesday data
+    prof=filtered_df['Chg%'].apply(lambda x: 1 if x>0 else 0) # profit set to 1 using lambda 
+    ans=prof.sum()/len(df) #total probability
+    return ans
+
+def conditional_prof(df): 
+    filtered_df=df.loc[df.Day=='Wed'] # filter out wednesday data
+    prof=filtered_df['Chg%'].apply(lambda x: 1 if x>0 else 0) # profit set to 1 using lambda
+    ans=prof.sum()/len(prof)
+    return ans
+
+def scatter(df): # function to scatter plot Days against Chg% 
+    plt.scatter(df['Day'],df['Chg%'])
+    plt.title(" Scatter Plot")
+    plt.xlabel("Days of the week")
+    plt.ylabel("chg%")
+    plt.show()
+
+
 print("IRCTC Stock Price Data:")
 df = load_data()
-print(df)
+#print(df)
+
+# mean and varience of built in method
 mean,varience=mean_varience_numpy(df)
 print("Mean of Stock Price:",mean)
 print("Varience of Stock Price:",varience)
+
+# mean and varience caluclated manually
 mean1,varience1=mean_varience(df)
 print("Mean of Stock Price:",mean1)
 print("Varience of Stock Price:",varience1)
+
+# execution time of both methods 
 total_time_numpy, avg_time_numpy=exec_time(mean_varience_numpy,df)
 total_time_manual, avg_time_manual=exec_time(mean_varience,df)
 print("numpy execution time:",total_time_numpy)
 print("manual execution time:",total_time_manual)
+
+# difference of both methods
 print("mean difference:",abs(mean-mean1))
 print("varience difference:",abs(varience-varience1))
+
+# average execution time both methods
 print("average execution time for numpy:",avg_time_numpy)
 print("average execution time for manual:",avg_time_manual)
+
+#mean and varience of wednesday alone
+print("Filtered Data for Wednesday:")
+#print(filter(df))
+meanf,variencef=filter_wed(df)
+print("Mean of Filtered Stock Price:",meanf)
+print("Varience of Filtered Stock Price:",variencef)
+
+# difference between wednesday mean and total mean
+print("difference between filtered mean and population mean:",abs(meanf-mean))
+print("difference between filtered varience and population varience:",abs(variencef-varience))
+
+# mean and varience of only april month data
+print("Filtered Data for April:")
+meanf_apr,variencef_apr=filter_apr(df)
+print("Mean of Filtered Stock Price:",meanf_apr)
+print("Varience of Filtered Stock Price:",variencef_apr)
+
+# difference between april mean and actual mean
+print("difference between filtered mean in april and population mean:",abs(meanf_apr-mean))
+print("difference between filtered varience in april and population varience:",abs(variencef_apr-varience))
+
+# loss probability of entire dataset
+print(" probability of loss:",loss_probability(df))
+# profiti probability of only wednesday data
+print("probility of profit on wednesday:",profit_wed(df))
+# conditional profit probability of only wednesday data
+print("conditional probability on wednesday:",conditional_prof(df))
+
+scatter(df)
