@@ -1,13 +1,13 @@
 import pandas as pd
-def load_data():
+def load_data(): # load dataset
     df = pd.read_excel("Lab Session Data.xlsx", sheet_name="thyroid0387_UCI") #derive data from excel sheet 
     return df
 
-def binary(df):
+def binary(df):# function to identify  
     first_two=df.iloc[:2]
     binary=[]
     for col in df.columns:
-        unique_val=df[col].dropna().unique()
+        unique_val=df[col].dropna().unique() # identify columns with binary attributes
         if len(unique_val)==2:
             binary.append(col)
     binary_data=first_two[binary].copy()
@@ -15,17 +15,17 @@ def binary(df):
         unique_val=df[col].dropna().unique()
         if not set(unique_val).issubset({0,1}):
             mapping={
-                unique_val[0]:0,unique_val[1]:1
+                unique_val[0]:0,unique_val[1]:1 # convert binary values to 0 and 1 if necessary
             }
             binary_data[col]=binary_data[col].map(mapping)
     return binary_data
 
-def vector(binary_data):
+def vector(binary_data): # function to create vectors
     vector1=binary_data.iloc[0].values
     vector2=binary_data.iloc[1].values
     return vector1,vector2
 
-def calculate(vector1,vector2):
+def calculate(vector1,vector2): # function to compute f00,f01,f10,f11
     f00 = 0
     f01 = 0
     f10 = 0
@@ -42,7 +42,7 @@ def calculate(vector1,vector2):
             f11 += 1
     return f00,f01,f10,f11
 
-def Jaccard(f00,f01,f10,f11):
+def Jaccard(f00,f01,f10,f11): # function to caluclate  JC and SMC
     JC = f11 / (f01 + f10 + f11)
     SMC = (f11 + f00) / (f00 + f01 + f10 + f11)
     return JC,SMC
