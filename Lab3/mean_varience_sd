@@ -1,0 +1,55 @@
+import pandas as pd
+import numpy as np
+import math
+def load_data(): # load data 
+    df = pd.read_excel("Lab Session Data.xlsx", sheet_name="marketing_campaign",na_values=["?"]) #derive data from excel sheet 
+    return df
+def mean_varience(a): # function to find mean and varience and standard deviation
+    total=0
+    var=0
+    for i in range(len(a)):
+        total=total+a[i]
+    mean=total/len(a)
+    for i in range(len(a)):
+        var=var+(a[i]-mean)**2
+    varience=var/len(a)
+    sd=varience**0.5
+    return mean,varience,sd
+def matrix(df): # convert dataset to matrix
+    mat=df.select_dtypes(include=np.number).to_numpy()
+    return mat
+def calculate(mat):# function to pass each input features(matrix columns) to the mean, varience,sd function
+    mean=[]
+    var=[]
+    sd=[]
+    for col in range(mat.shape[1]):
+        ans1,ans2,ans3=mean_varience(mat[:,col])
+        mean.append(ans1)
+        var.append(ans2)
+        sd.append(ans3)
+    return mean,var,sd
+def inbuilt(mat):
+    mean=np.nanmean(mat,axis=0)
+    sd=np.nanstd(mat,axis=0)
+    return mean,sd
+
+        
+
+df=load_data()
+mat=matrix(df)
+mean,var,sd=calculate(mat)
+print("mean of all input features:")
+print(mean)
+print("\n varience of all input features:")
+print(var)
+print("\n standard deviation of all input features:")
+print(sd)
+mean2,sd2=inbuilt(mat)
+print("inbuilt mean:")
+print(mean2)
+print("\n inbuilt sd:")
+print(sd2)
+
+    
+
+    
