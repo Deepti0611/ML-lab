@@ -44,6 +44,7 @@ def label_encode(df):
 
 df=load()
 print(df)
+print(df.shape)
 info,type=datatypes(df)
 print("info")
 print(info)
@@ -56,3 +57,5 @@ print(Onehot(df))
 print()
 print("label encoded-education")
 print(label_encode(df))
+print("feature dimensionality before encoding :",df.shape)
+print("feature dimensionality after encoding :",Onehot(df).shape)
