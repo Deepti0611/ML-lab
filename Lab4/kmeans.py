@@ -106,10 +106,18 @@ def k_means(X, X_scaled, df, optimal_k, scaler):
     plt.legend()
 
     plt.show()
-df=load_data()
-X=choose_columns(df)
-X = X.dropna()
-df = df.loc[X.index]
-scaled_X, scaler = standardize_data(X)
-optimal_k = wcss_val(scaled_X)
-k_means(X, scaled_X, df, optimal_k, scaler)
+    return kmeans, centers,df 
+def main():
+    df = load_data()
+    X = choose_columns(df)
+    X = X.dropna()
+    df = df.loc[X.index]
+
+    scaled_X, scaler = standardize_data(X)
+
+    optimal_k = wcss_val(scaled_X)
+
+    k_means(X, scaled_X, df, optimal_k, scaler)
+
+if __name__ == "__main__":
+    main()
