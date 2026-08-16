@@ -3,13 +3,30 @@ import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
 def load_data(): # load data 
     df = pd.read_csv("features.csv") #derive data from csv file 
     return df
-def target_feature(df): # separate target and features
+'''def target_feature(df): # separate target and features
     X=df.drop(columns=["person_id","image_name"])
     Y=df["person_id"]
+    return X, Y'''
+    
+def select_class(df):
+    # Select only two classes from person_id
+    selected_df = df[df["person_id"].isin(["A", "B"])].copy()
+
+    return selected_df
+def target_feature(df):
+    # Separate features and target
+    X = df.drop(columns=["person_id", "image_name"])
+    Y = df["person_id"]
     return X, Y
+def split_data(X, Y, test_size=0.3):
+    # Divide data into training and testing sets
+    X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size=test_size,random_state=42,stratify=Y )
+    return X_train, X_test, Y_train, Y_test
+
 def encoding(X):   
 # Identify categorical columns
     categorical_columns = X.select_dtypes(
@@ -105,41 +122,71 @@ def majority(neighbours):
 
         if item[1] in majority_labels:
             return item[1]
-        
+def fit(X,Y):
+    X_train,X_test,Y_train,Y_test=split_data(X,Y,test_size=0.3)
+    return X_train,X_test,Y_train,Y_test
+    
+def predict(X_train,Y_train , X_test,k):#prediction for all X_test
+    predictions = []
+    for test_vector in X_test.values:
+        distances = KNN_dist(X_train,test_vector,Y_train)
+        distances = sort_bubble(distances)
+        neighbours = identify_k(distances, k)
+        prediction = majority(neighbours)
+        predictions.append(prediction)
+    return predictions           
+def score(prediction,Y_test):
+    sum=0
+    for i in range(len(prediction)):
+        if prediction[i]==Y_test.iloc[i]:
+            sum=sum+1
+    score=sum/len(prediction)
+    return score
+
+
 
         
+df = load_data()
 
-df=load_data()
-X,Y=target_feature(df)
+# Select two classes
+df = select_class(df)
+
+print("Selected dataset:")
+print(df)
+
+
+# Separate features and target
+X, Y = target_feature(df)
+
+print("\nFeatures:")
 print(X)
+
+print("\nTarget:")
 print(Y)
-X=(encoding(X))
-X=missing(X,"mean")
 
 
-# Example test vector
-test_vector = X.iloc[0].values
-
-# Remaining samples are used as training data
-train_data = X.iloc[1:].values
-train_labels = Y.iloc[1:].values
-distances = KNN_dist(train_data,test_vector,train_labels)
-
-print("\nDistances after sorting:")
-print(distances)
-ditances = sort_bubble(distances)
-# Select k
-k = 3
-
-neighbours = identify_k(distances,k)
+# Handle missing values
+X = missing(X, "mean")
 
 
-print("\nNearest neighbours:")
-print(neighbours)
+# Split into training and testing data
+X_train, X_test, Y_train, Y_test = fit(X,Y)
 
+print("\nX_train:")
+print(X_train)
 
-# Majority voting
-prediction = majority(neighbours)
+print("\nY_train:")
+print(Y_train)
 
-print("\nPredicted class:")
+print("\nX_test:")
+print(X_test)
+
+print("\nY_test:")
+print(Y_test)
+prediction=predict(X_train,Y_train,X_test,3)
+print("\nPredictions:")
 print(prediction)
+accuracy=score(prediction,Y_test)
+print("\nAccuracy")
+print(accuracy)
+
