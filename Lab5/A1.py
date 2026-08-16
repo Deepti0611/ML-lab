@@ -1,114 +1,145 @@
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
 def load_data(): # load data 
-    df = pd.read_csv("features.csv") #derive data from excel sheet 
+    df = pd.read_csv("features.csv") #derive data from csv file 
     return df
-def standardize_data(X):
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    return X_scaled, scaler
-def wcss_val(X_scaled):
-    wcss = []
-    K=range(1, 11)
-    for k in range(1, 11):
-        model = KMeans(n_clusters=k, random_state=42, n_init=10)
-        model.fit(X_scaled)
-        wcss.append(model.inertia_)
+def target_feature(df): # separate target and features
+    X=df.drop(columns=["person_id","image_name"])
+    Y=df["person_id"]
+    return X, Y
+def encoding(X):   
+# Identify categorical columns
+    categorical_columns = X.select_dtypes(
+    include=["object"]
+    ).columns.tolist()
+    if(categorical_columns):
+        # Create a ColumnTransformer with OneHotEncoder for categorical columns
+        column_transformer = ColumnTransformer(
+            transformers=[
+                ("onehot", OneHotEncoder(), categorical_columns)
+            ],
+            remainder="passthrough"  # Keep other columns unchanged
+            )
+        # Fit and transform the data
+        X_encoded = column_transformer.fit_transform(X)
+        return X_encoded
+    else:
+        return X
+def missing(X,method): # handle missing values
+    X=pd.DataFrame(X).copy()
+    for col in X.columns:
+        if X[col].isnull().any():
+            if method == "mean":
+                X[col]=X[col].fillna(X[col].mean())
+            elif method == "median":
+                X[col]=X[col].fillna(X[col].median())
+            elif method == "mode":
+                X[col]=X[col].fillna(X[col].mode()[0])
+    return X
+def eucledean(vec1,vec2): # calculate eucledean distance
+    return np.sqrt(np.sum((vec1-vec2)**2))
+def KNN_dist(train,test,train_labels): # calculate distance between train and test data
+    distances=[]
+    train=np.array(train)
+    test=np.array(test)
+    train_labels=np.array(train_labels)
+    for i in range(len(train)):
+        dist=eucledean(train[i],test)
+        distances.append([dist, train_labels[i]])
+    return distances
+def sort_bubble(distances):
+    n = len(distances)
+    distances=distances.copy()
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if distances[j][0] > distances[j+1][0]:
+                distances[j], distances[j+1] = distances[j+1], distances[j]
+    return distances
+def sort_selection(distances):
+    n = len(distances)
+    distances=distances.copy()
+    for i in range(n):
+        min = i
+        for j in range(i+1, n):
+            if distances[j][0] < distances[min][0]:
+                min = j
+        distances[i], distances[min] = distances[min], distances[i]
+    return distances
+def sort_insertion(distances):
+    n = len(distances)
+    for i in range(1, n):
+        key = distances[i]
+        j = i-1
+        while j >= 0 and key[0] < distances[j][0]:
+            distances[j + 1] = distances[j]
+            j -= 1
+        distances[j + 1] = key
+    return distances
+def identify_k(distances,k): # identify k nearest neighbours
+    return distances[:k]
+def majority(neighbours):
+    labels = [item[1] for item in neighbours]
+    class_counts = {}
+    for label in labels:
+        if label not in class_counts:
+            class_counts[label] = 0
+        class_counts[label] += 1
+    maximum = max(class_counts.values())
+    majority_labels = []
+    for label in class_counts:
 
-    # Coordinates of first and last points
-    x1, y1 = 1, wcss[0]
-    x2, y2 = 10, wcss[-1]
+        if class_counts[label] == maximum:
+            majority_labels.append(label)
 
-    distances = []
+    # No tie
+    if len(majority_labels) == 1:
+        return majority_labels[0]
 
-# Distance of each point from the line
-    for i, y0 in zip(K, wcss):
+    # Tie:
+    # Since neighbours are already sorted by distance,
+    # choose the class of the closest tied class.
+    for item in neighbours:
 
-        numerator = abs((y2-y1)*i - (x2-x1)*y0 + x2*y1 - y2*x1)
-        denominator = np.sqrt((y2-y1)**2 + (x2-x1)**2)
+        if item[1] in majority_labels:
+            return item[1]
+        
 
-        distances.append(numerator/denominator)
+        
 
-# Elbow point
-        optimal_k = K[np.argmax(distances)]
-
-        print("Optimal K =", optimal_k)
-
-# Plot
-    plt.figure(figsize=(8,5))
-    plt.plot(K, wcss, marker='o')
-    plt.scatter(optimal_k,
-            wcss[optimal_k-1],
-            color='red',
-            s=120,
-            label=f'Elbow = {optimal_k}')
-
-    plt.xlabel("Number of Clusters")
-    plt.ylabel("WCSS")
-    plt.title("Elbow Method")
-    plt.legend()
-    plt.grid(True)
-
-    plt.show()
-    return optimal_k
-def k_means(X, X_scaled, df, optimal_k, scaler):
-    k = optimal_k
-    kmeans = KMeans(
-        n_clusters=k,
-        random_state=42,
-        n_init=10
-)
-
-    kmeans.fit(X_scaled)
-
-# Labels
-    df["Cluster"] = kmeans.labels_
-
-    print(df[["Cluster"]].head())
-
-# Cluster Centers
-    centers = scaler.inverse_transform(kmeans.cluster_centers_)
-
-    print("\nCluster Centers")
-    print(centers)
-
-# Plot
-    plt.figure(figsize=(8,6))
-
-    plt.scatter(
-        X_scaled[:,0],
-        X_scaled[:,1],
-        c=kmeans.labels_,
-        cmap='viridis'
-)
-
-    plt.scatter(
-        kmeans.cluster_centers_[:,0],
-        kmeans.cluster_centers_[:,1],
-        c='red',
-        marker='X',
-        s=200,
-        label='Centroids'
-)
-
-    plt.xlabel(X.columns[0])
-    plt.ylabel(X.columns[1])
-
-    plt.title("K-Means Clustering")
-
-    plt.legend()
-
-    plt.show()
-    return kmeans, centers,df 
 df=load_data()
-X=df.select_dtypes(include=[np.number])
-X=X.dropna()
-df=df.loc[X.index]
-xscaled,scaler=standardize_data(X)
-optimal_k=wcss_val(xscaled)
-k_means(X, xscaled, df, optimal_k, scaler)
+X,Y=target_feature(df)
+print(X)
+print(Y)
+X=(encoding(X))
+X=missing(X,"mean")
 
+
+# Example test vector
+test_vector = X.iloc[0].values
+
+# Remaining samples are used as training data
+train_data = X.iloc[1:].values
+train_labels = Y.iloc[1:].values
+distances = KNN_dist(train_data,test_vector,train_labels)
+
+print("\nDistances after sorting:")
+print(distances)
+distances = sort_bubble(distances)
+# Select k
+k = 3
+
+neighbours = identify_k(distances,k)
+
+
+print("\nNearest neighbours:")
+print(neighbours)
+
+
+# Majority voting
+prediction = majority(neighbours)
+
+print("\nPredicted class:")
+print(prediction)
