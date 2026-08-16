@@ -41,15 +41,18 @@ def missing(X,method): # handle missing values
     return X
 def eucledean(vec1,vec2): # calculate eucledean distance
     return np.sqrt(np.sum((vec1-vec2)**2))
-def KNN_dist(train,test,train_labels): # calculate distance between train and test data
-    distances=[]
+def weighted_KNN_dist(train,test,train_labels): # calculate distance between train and test data
+    # code modified to include weights based on distance
+    weighted_distances=[]
     train=np.array(train)
     test=np.array(test)
     train_labels=np.array(train_labels)
     for i in range(len(train)):
         dist=eucledean(train[i],test)
-        distances.append([dist, train_labels[i]])
-    return distances
+        # Assign weights (inverse of distance)
+        weight = 1 / (dist)
+        weighted_distances.append([dist, train_labels[i], weight])
+    return weighted_distances
 def sort_bubble(distances):
     n = len(distances)
     distances=distances.copy()
@@ -82,11 +85,11 @@ def identify_k(distances,k): # identify k nearest neighbours
     return distances[:k]
 def majority(neighbours):
     labels = [item[1] for item in neighbours]
-    class_counts = {}
-    for label in labels:
-        if label not in class_counts:
-            class_counts[label] = 0
-        class_counts[label] += 1
+    class_counts = {label: 0 for label in labels}
+    for item in neighbours:
+        label = item[1]
+        weight = item[2]
+        class_counts[label] += weight
     maximum = max(class_counts.values())
     majority_labels = []
     for label in class_counts:
@@ -106,6 +109,7 @@ def majority(neighbours):
         if item[1] in majority_labels:
             return item[1]
         
+       
 
         
 
@@ -123,11 +127,11 @@ test_vector = X.iloc[0].values
 # Remaining samples are used as training data
 train_data = X.iloc[1:].values
 train_labels = Y.iloc[1:].values
-distances = KNN_dist(train_data,test_vector,train_labels)
+distances = weighted_KNN_dist(train_data,test_vector,train_labels)
 
 print("\nDistances after sorting:")
 print(distances)
-ditances = sort_bubble(distances)
+distances = sort_bubble(distances)
 # Select k
 k = 3
 
