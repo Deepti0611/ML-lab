@@ -196,75 +196,92 @@ def merge(left, right):
 
 class KNN:
 
-    def __init__(self, k=3, weighted=False):
+    def __init__(self, k=3, weighted=True):
         self.k = k
         self.weighted = weighted
         self.X_train = None
         self.y_train = None
 
     def fit(self, X_train, y_train):
+        """
+        Store the training data and target labels.
+        """
 
-        self.X_train = (
-            X_train.to_numpy()
-            if hasattr(X_train, "to_numpy")
-            else X_train
-        )
-
-        self.y_train = (
-            y_train.to_numpy()
-            if hasattr(y_train, "to_numpy")
-            else y_train
-        )
+        self.X_train = X_train
+        self.y_train = y_train
 
         return self
 
     def predict_one(self, test_vector):
+        """
+        Predict the class for one test vector.
+        """
 
         distances = []
 
-        # Calculate distance from test vector
-        # to every training vector
+        # Calculate distance between test vector
+        # and every training vector
         for i in range(len(self.X_train)):
+
+            train_vector = self.X_train[i]
 
             dist = distance(
                 test_vector,
-                self.X_train[i]
+                train_vector
             )
 
             distances.append(
                 (dist, self.y_train[i])
             )
 
-        # Sort according to distance
+        # Sort by distance
         sorted_distances = merge_sort(distances)
 
         # Select K nearest neighbours
         k_nearest = sorted_distances[:self.k]
 
-        # Weighted voting
-        class_weights = {}
+        # Calculate class scores
+        class_scores = {}
 
         for dist, label in k_nearest:
 
-            # Avoid division by zero
-            epsilon = 1e-10
+            if self.weighted:
 
-            weight = 1 / (dist + epsilon)
+                # Weighted KNN
+                if distance == 0:
+                    weight = float("inf")
+                else:
+                    weight = 1 / dist
 
-            if label not in class_weights:
-                class_weights[label] = 0
+            else:
 
-            class_weights[label] += weight
+                # Normal KNN
+                weight = 1
 
-        # Find class with highest total weight
-        prediction = max(
-            class_weights,
-            key=class_weights.get
-        )
+            if label not in class_scores:
+                class_scores[label] = 0
+
+            class_scores[label] += weight
+
+        # Find class with highest score
+        prediction = None
+        highest_score = None
+
+        for label in class_scores:
+
+            score = class_scores[label]
+
+            if highest_score is None or score > highest_score:
+
+                highest_score = score
+                prediction = label
 
         return prediction
 
     def predict(self, X_test):
+        """
+        Predict classes for all test vectors.
+        """
 
         predictions = []
 
