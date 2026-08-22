@@ -39,7 +39,6 @@ def encoding(X):
             transformers=[
                 ("onehot", OneHotEncoder(), categorical_columns)
             ],
-            remainder="passthrough"  # Keep other columns unchanged
             )
         # Fit and transform the data
         X_encoded = column_transformer.fit_transform(X)

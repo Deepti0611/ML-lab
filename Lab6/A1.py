@@ -285,75 +285,71 @@ def accuracy_score(y_true, y_pred):
     accuracy = correct / len(y_true)
 
     return accuracy
+if __name__ == "__main__":
 
-df = load_data()
+    df = load_data()
 
-# Select two classes
-df = select_class(df)
+    # Select two classes
+    df = select_class(df)
 
-# Separate features and target
-x, y = target_feature(df)
+    # Separate features and target
+    x, y = target_feature(df)
 
-print("\nFeatures:")
-print(x)
+    print("\nFeatures:")
+    print(x)
 
-print("\nTarget:")
-print(y)
+    print("\nTarget:")
+    print(y)
 
-X_train, X_test, y_train, y_test = splitdata(x, y)
+    X_train, X_test, y_train, y_test = splitdata(x, y)
 
-print("\nX_train:")
-print(X_train)
+    print("\nX_train:")
+    print(X_train)
 
-print("\nX_test:")
-print(X_test)
+    print("\nX_test:")
+    print(X_test)
 
-print("\ny_train:")
-print(y_train)
+    print("\ny_train:")
+    print(y_train)
 
-print("\ny_test:")
-print(y_test)
+    print("\ny_test:")
+    print(y_test)
 
-preprocessor = create_preprocessor(X_train)
+    preprocessor = create_preprocessor(X_train)
 
+    X_train_processed = preprocessor.fit_transform(X_train)
+    X_test_processed = preprocessor.transform(X_test)
 
-# Fit preprocessor ONLY on training data
-X_train_processed = preprocessor.fit_transform(X_train)
+    print("\nProcessed X_train:")
+    print(X_train_processed)
 
-# Use the same fitted preprocessor on test data
-X_test_processed = preprocessor.transform(X_test)
+    print("\nProcessed X_test:")
+    print(X_test_processed)
 
+    y_train = y_train.to_numpy()
+    y_test = y_test.to_numpy()
 
-print("\nProcessed X_train:")
-print(X_train_processed)
+    model = KNN(k=3)
 
-print("\nProcessed X_test:")
-print(X_test_processed)
+    model.fit(
+        X_train_processed,
+        y_train
+    )
 
-y_train = y_train.to_numpy()
-y_test = y_test.to_numpy()
+    predictions = model.predict(
+        X_test_processed
+    )
 
-model = KNN(k=3)
+    print("\nPredicted classes:")
+    print(predictions)
 
-model.fit(
-    X_train_processed,
-    y_train
-)
+    print("\nActual classes:")
+    print(y_test)
 
-predictions = model.predict(
-    X_test_processed
-)
+    accuracy = accuracy_score(
+        y_test,
+        predictions
+    )
 
-print("\nPredicted classes:")
-print(predictions)
-
-print("\nActual classes:")
-print(y_test)
-
-accuracy = accuracy_score(
-    y_test,
-    predictions
-)
-
-print("\nAccuracy:")
-print(accuracy)
+    print("\nAccuracy:")
+    print(accuracy)
