@@ -5,28 +5,39 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
-import matplotlib.pyplot as plt 
-def load_data(): # load data 
-    df = pd.read_csv("features.csv") #derive data from csv file 
+import matplotlib.pyplot as plt
+from sklearn.metrics import precision_score, recall_score, f1_score
+
+
+def load_data(): # load data
+    df = pd.read_csv("features.csv") #derive data from csv file
     return df
+
+
 def select_class(df):
     selected_classes = df["person_id"].unique()[:2]
     df_two_classes = df[df["person_id"].isin(selected_classes)]
     return df_two_classes
+
+
 def target_feature(df):
     # Separate features and target
     X = df.drop(columns=["person_id", "image_name"])
     Y = df["person_id"]
     return X, Y
-def splitdata(x,y):
+
+
+def splitdata(x, y):
     X_train, X_test, y_train, y_test = train_test_split(
-    x,
-    y,
-    test_size=0.3,
-    random_state=42,
-    stratify=y
-)
-    return X_train,X_test,y_train,y_test
+        x,
+        y,
+        test_size=0.3,
+        random_state=42,
+        stratify=y
+    )
+    return X_train, X_test, y_train, y_test
+
+
 def encode_features(X):
     """
     Common encoding module for numerical and categorical features.
@@ -76,6 +87,8 @@ def encode_features(X):
     X_encoded = preprocessor.fit_transform(X)
 
     return X_encoded, preprocessor
+
+
 def create_preprocessor(X):
 
     # Identify column types
@@ -119,9 +132,13 @@ def create_preprocessor(X):
     )
 
     return preprocessor
-def distance(vector_1,vector_2):
+
+
+def distance(vector_1, vector_2):
     distance = np.linalg.norm(vector_1 - vector_2)
     return distance
+
+
 def bubble_sort(distances):
     arr = distances.copy()
 
@@ -193,58 +210,224 @@ def merge(left, right):
     result.extend(right[j:])
 
     return result
+def precision_per_class(y_true, y_pred, classes):
+
+    precision_values = {}
+
+    for positive_class in classes:
+
+        true_positive = 0
+        false_positive = 0
+
+        for actual, predicted in zip(y_true, y_pred):
+
+            if predicted == positive_class:
+
+                if actual == positive_class:
+                    true_positive += 1
+
+                else:
+                    false_positive += 1
+
+        if true_positive + false_positive == 0:
+            precision = 0
+        else:
+            precision = true_positive / (
+                true_positive + false_positive
+            )
+
+        precision_values[positive_class] = precision
+
+    return precision_values
 
 
-def loop(X_train_processed,X_test_processed,y_train,y_test):
-    k=[1,2,3,4,5,6,7]
-    self_accuracy=[]
-    library_accuracy=[]
+def recall_per_class(y_true, y_pred, classes):
+
+    recall_values = {}
+
+    for positive_class in classes:
+
+        true_positive = 0
+        false_negative = 0
+
+        for actual, predicted in zip(y_true, y_pred):
+
+            if actual == positive_class:
+
+                if predicted == positive_class:
+                    true_positive += 1
+
+                else:
+                    false_negative += 1
+
+        if true_positive + false_negative == 0:
+            recall = 0
+        else:
+            recall = true_positive / (
+                true_positive + false_negative
+            )
+
+        recall_values[positive_class] = recall
+
+    return recall_values
+
+
+def f1_score_per_class(precision_values, recall_values):
+
+    f1_values = {}
+
+    for class_name in precision_values:
+
+        precision = precision_values[class_name]
+        recall = recall_values[class_name]
+
+        if precision + recall == 0:
+            f1_score = 0
+        else:
+            f1_score = 2 * (
+                precision * recall
+            ) / (
+                precision + recall
+            )
+
+        f1_values[class_name] = f1_score
+
+    return f1_values
+
+
+def loop(X_train_processed, X_test_processed, y_train, y_test):
+
+    k = [1, 2, 3, 4, 5, 6, 7]
+
+    self_accuracy = []
+    library_accuracy = []
+
+    # Store Precision, Recall and F1 for every K
+    self_precision_results = []
+    self_recall_results = []
+    self_f1_results = []
+
+    library_precision_results = []
+    library_recall_results = []
+    library_f1_results = []
+
+    classes = list(set(y_test))
+
     for i in k:
         model = KNN(k=i)
-    
+
         model.fit(
             X_train_processed,
             y_train
         )
-    
-        predictions = model.predict(
+
+        self_predictions = model.predict(
             X_test_processed
         )
+
         accuracy = model.accuracy_score(
-                y_test,
-                predictions
-            )
+            y_test,
+            self_predictions
+        )
+
         self_accuracy.append(accuracy)
-        model=LibraryKNN(k=i)
+
+        # Precision
+        self_precision = precision_per_class(
+            y_test,
+            self_predictions,
+            classes
+        )
+
+        # Recall
+        self_recall = recall_per_class(
+            y_test,
+            self_predictions,
+            classes
+        )
+
+        # F1 Score
+        self_f1 = f1_score_per_class(
+            self_precision,
+            self_recall
+        )
+
+        self_precision_results.append(self_precision)
+        self_recall_results.append(self_recall)
+        self_f1_results.append(self_f1)
+
+        model = LibraryKNN(k=i)
+
         model.fit(
-                    X_train_processed,
-                    y_train
-                )
-            
-        predictions = model.predict(
-                    X_test_processed
-                )
+            X_train_processed,
+            y_train
+        )
+
+        library_predictions = model.predict(
+            X_test_processed
+        )
+
         accuracy = model.score(
             X_test_processed,
             y_test
         )
+
         library_accuracy.append(accuracy)
-    return self_accuracy,library_accuracy,k
-def plot(self_accuracy,library_accuracy,k_values):
+
+        # Precision
+        library_precision = precision_per_class(
+            y_test,
+            library_predictions,
+            classes
+        )
+
+        # Recall
+        library_recall = recall_per_class(
+            y_test,
+            library_predictions,
+            classes
+        )
+
+        # F1 Score
+        library_f1 = f1_score_per_class(
+            library_precision,
+            library_recall
+        )
+
+        library_precision_results.append(library_precision)
+        library_recall_results.append(library_recall)
+        library_f1_results.append(library_f1)
+
+
+    return (
+        self_accuracy,
+        library_accuracy,
+        k,
+        self_precision_results,
+        self_recall_results,
+        self_f1_results,
+        library_precision_results,
+        library_recall_results,
+        library_f1_results
+    )
+
+
+def plot(self_accuracy, library_accuracy, k_values):
+
     plt.figure(figsize=(8, 5))
 
     plt.plot(
-    k_values,
-    self_accuracy,
-    marker="o",
-    label="Self Implemented KNN"
+        k_values,
+        self_accuracy,
+        marker="o",
+        label="Self Implemented KNN"
     )
 
     plt.plot(
-    k_values,
-    library_accuracy,
-    marker="o",
-    label="Library KNN"
+        k_values,
+        library_accuracy,
+        marker="o",
+        label="Library KNN"
     )
 
     plt.xlabel("K Value")
@@ -259,6 +442,8 @@ def plot(self_accuracy,library_accuracy,k_values):
     plt.grid(True)
 
     plt.show()
+
+
 class KNN:
 
     def __init__(self, k=3):
@@ -332,12 +517,13 @@ class KNN:
             predictions.append(prediction)
 
         return predictions
+
     def accuracy_score(self, y_true, y_pred):
 
         if len(y_true) != len(y_pred):
             raise ValueError(
-            "Actual and predicted values must have the same length"
-        )
+                "Actual and predicted values must have the same length"
+            )
 
         correct = 0
 
@@ -349,6 +535,8 @@ class KNN:
         accuracy = correct / len(y_true)
 
         return accuracy
+
+
 from sklearn.neighbors import KNeighborsClassifier
 
 
@@ -382,6 +570,8 @@ class LibraryKNN:
             X_test,
             y_test
         )
+
+
 if __name__ == "__main__":
 
     df = load_data()
@@ -414,13 +604,11 @@ if __name__ == "__main__":
 
     preprocessor = create_preprocessor(X_train)
 
-
     # Fit preprocessor ONLY on training data
     X_train_processed = preprocessor.fit_transform(X_train)
 
     # Use the same fitted preprocessor on test data
     X_test_processed = preprocessor.transform(X_test)
-
 
     print("\nProcessed X_train:")
     print(X_train_processed)
@@ -430,8 +618,57 @@ if __name__ == "__main__":
 
     y_train = y_train.to_numpy()
     y_test = y_test.to_numpy()
-    
-    self_accuracy,library_accuracy,k_values=loop(X_train_processed,X_test_processed,y_train,y_test)
-    plot(self_accuracy,library_accuracy,k_values)
 
-    
+    (
+        self_accuracy,
+        library_accuracy,
+        k_values,
+        self_precision_results,
+        self_recall_results,
+        self_f1_results,
+        library_precision_results,
+        library_recall_results,
+        library_f1_results
+    ) = loop(
+        X_train_processed,
+        X_test_processed,
+        y_train,
+        y_test
+    )
+
+    plot(
+        self_accuracy,
+        library_accuracy,
+        k_values
+    )
+
+    for index, k in enumerate(k_values):
+
+        print("\nSELF IMPLEMENTED WEIGHTED KNN")
+
+        print("Accuracy:")
+        print(self_accuracy[index])
+
+        print("Precision per class:")
+        print(self_precision_results[index])
+
+        print("Recall per class:")
+        print(self_recall_results[index])
+
+        print("F1 Score per class:")
+        print(self_f1_results[index])
+
+
+        print("\nLIBRARY BASED WEIGHTED KNN")
+
+        print("Accuracy:")
+        print(library_accuracy[index])
+
+        print("Precision per class:")
+        print(library_precision_results[index])
+
+        print("Recall per class:")
+        print(library_recall_results[index])
+
+        print("F1 Score per class:")
+        print(library_f1_results[index])
