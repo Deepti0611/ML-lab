@@ -6,6 +6,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 import matplotlib.pyplot as plt
+import time
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 
@@ -293,16 +294,13 @@ def f1_score_per_class(precision_values, recall_values):
         f1_values[class_name] = f1_score
 
     return f1_values
-
-
 def loop(X_train_processed, X_test_processed, y_train, y_test):
 
-    k = [1, 2, 3, 4, 5, 6, 7]
+    k_values = [1, 2, 3, 4, 5, 6, 7]
 
     self_accuracy = []
     library_accuracy = []
 
-    # Store Precision, Recall and F1 for every K
     self_precision_results = []
     self_recall_results = []
     self_f1_results = []
@@ -311,106 +309,244 @@ def loop(X_train_processed, X_test_processed, y_train, y_test):
     library_recall_results = []
     library_f1_results = []
 
+    self_times = []
+    library_times = []
+
     classes = list(set(y_test))
 
-    for i in k:
-        model = KNN(k=i)
+    for k in k_values:
 
-        model.fit(
+        # ==================================================
+        # SELF-IMPLEMENTED WEIGHTED KNN
+        # ==================================================
+
+        # ---- Metrics ----
+
+        self_model = KNN(k=k)
+
+        self_model.fit(
             X_train_processed,
             y_train
         )
 
-        self_predictions = model.predict(
+        self_predictions = self_model.predict(
             X_test_processed
         )
 
-        accuracy = model.accuracy_score(
+        self_accuracy_value = self_model.accuracy_score(
             y_test,
             self_predictions
         )
 
-        self_accuracy.append(accuracy)
-
-        # Precision
         self_precision = precision_per_class(
             y_test,
             self_predictions,
             classes
         )
 
-        # Recall
         self_recall = recall_per_class(
             y_test,
             self_predictions,
             classes
         )
 
-        # F1 Score
         self_f1 = f1_score_per_class(
             self_precision,
             self_recall
         )
 
-        self_precision_results.append(self_precision)
-        self_recall_results.append(self_recall)
-        self_f1_results.append(self_f1)
+        self_accuracy.append(
+            self_accuracy_value
+        )
 
-        model = LibraryKNN(k=i)
+        self_precision_results.append(
+            self_precision
+        )
 
-        model.fit(
+        self_recall_results.append(
+            self_recall
+        )
+
+        self_f1_results.append(
+            self_f1
+        )
+
+
+        # ==================================================
+        # SELF IMPLEMENTED - 10 RUN TIME
+        # ==================================================
+
+        run_times = []
+
+        for run in range(10):
+
+            start_time = time.perf_counter()
+
+            self_model = KNN(k=k)
+
+            self_model.fit(
+                X_train_processed,
+                y_train
+            )
+
+            self_model.predict(
+                X_test_processed
+            )
+
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+
+            run_times.append(
+                elapsed_time
+            )
+
+        average_self_time = (
+            sum(run_times) / len(run_times)
+        )
+
+        self_times.append(
+            average_self_time
+        )
+
+
+        # ==================================================
+        # LIBRARY BASED WEIGHTED KNN
+        # ==================================================
+
+        library_model = LibraryKNN(k=k)
+
+        library_model.fit(
             X_train_processed,
             y_train
         )
 
-        library_predictions = model.predict(
+        library_predictions = library_model.predict(
             X_test_processed
         )
 
-        accuracy = model.score(
+        library_accuracy_value = library_model.score(
             X_test_processed,
             y_test
         )
 
-        library_accuracy.append(accuracy)
-
-        # Precision
         library_precision = precision_per_class(
             y_test,
             library_predictions,
             classes
         )
 
-        # Recall
         library_recall = recall_per_class(
             y_test,
             library_predictions,
             classes
         )
 
-        # F1 Score
         library_f1 = f1_score_per_class(
             library_precision,
             library_recall
         )
 
-        library_precision_results.append(library_precision)
-        library_recall_results.append(library_recall)
-        library_f1_results.append(library_f1)
+        library_accuracy.append(
+            library_accuracy_value
+        )
+
+        library_precision_results.append(
+            library_precision
+        )
+
+        library_recall_results.append(
+            library_recall
+        )
+
+        library_f1_results.append(
+            library_f1
+        )
+
+
+        # ==================================================
+        # LIBRARY - 10 RUN TIME
+        # ==================================================
+
+        run_times = []
+
+        for run in range(10):
+
+            start_time = time.perf_counter()
+
+            library_model = LibraryKNN(k=k)
+
+            library_model.fit(
+                X_train_processed,
+                y_train
+            )
+
+            library_model.predict(
+                X_test_processed
+            )
+
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+
+            run_times.append(
+                elapsed_time
+            )
+
+        average_library_time = (
+            sum(run_times) / len(run_times)
+        )
+
+        library_times.append(
+            average_library_time
+        )
+
+
+        # ==================================================
+        # PRINT CURRENT K
+        # ==================================================
+
+        print("\nK =", k)
+
+        print(
+            "Self Accuracy:",
+            self_accuracy_value
+        )
+
+        print(
+            "Library Accuracy:",
+            library_accuracy_value
+        )
+
+        print(
+            "Self Average Time:",
+            average_self_time,
+            "seconds"
+        )
+
+        print(
+            "Library Average Time:",
+            average_library_time,
+            "seconds"
+        )
 
 
     return (
         self_accuracy,
         library_accuracy,
-        k,
+        k_values,
+
         self_precision_results,
         self_recall_results,
         self_f1_results,
+
         library_precision_results,
         library_recall_results,
-        library_f1_results
-    )
+        library_f1_results,
 
+        self_times,
+        library_times
+    )
 
 def plot(self_accuracy, library_accuracy, k_values):
 
@@ -620,21 +756,23 @@ if __name__ == "__main__":
     y_test = y_test.to_numpy()
 
     (
-        self_accuracy,
-        library_accuracy,
-        k_values,
-        self_precision_results,
-        self_recall_results,
-        self_f1_results,
-        library_precision_results,
-        library_recall_results,
-        library_f1_results
-    ) = loop(
-        X_train_processed,
-        X_test_processed,
-        y_train,
-        y_test
-    )
+    self_accuracy,
+    library_accuracy,
+    k_values,
+    self_precision_results,
+    self_recall_results,
+    self_f1_results,
+    library_precision_results,
+    library_recall_results,
+    library_f1_results,
+    self_times,
+    library_times
+) = loop(
+    X_train_processed,
+    X_test_processed,
+    y_train,
+    y_test
+)
 
     plot(
         self_accuracy,

@@ -6,16 +6,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 import matplotlib.pyplot as plt
-
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
-
 from sklearn.neighbors import KNeighborsClassifier
+import time
 
 
-def load_data(): # load data
-    df = pd.read_csv("features.csv") # derive data from csv file
+def load_data():  # load data
+    df = pd.read_csv("features.csv")
     return df
 
 
@@ -47,15 +43,45 @@ def splitdata(x, y):
 def encode_features(X):
     """
     Common encoding module for numerical and categorical features.
-
-    Numerical columns:
-        Standardized using StandardScaler
-
-    Categorical columns:
-        Encoded using OneHotEncoder
     """
 
-    # Identify numerical and categorical columns
+    numerical_columns = X.select_dtypes(
+        include=["int64", "float64"]
+    ).columns
+
+    categorical_columns = X.select_dtypes(
+        include=["object", "category", "bool"]
+    ).columns
+
+    numerical_transformer = Pipeline(
+        steps=[
+            ("scaler", StandardScaler())
+        ]
+    )
+
+    categorical_transformer = Pipeline(
+        steps=[
+            ("encoder", OneHotEncoder(
+                handle_unknown="ignore",
+                sparse_output=False
+            ))
+        ]
+    )
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("numerical", numerical_transformer, numerical_columns),
+            ("categorical", categorical_transformer, categorical_columns)
+        ]
+    )
+
+    X_encoded = preprocessor.fit_transform(X)
+
+    return X_encoded, preprocessor
+
+
+def create_preprocessor(X):
+
     numerical_columns = X.select_dtypes(
         include=["int64", "float64"]
     ).columns
@@ -67,58 +93,12 @@ def encode_features(X):
     # Numerical preprocessing
     numerical_transformer = Pipeline(
         steps=[
-            ("scaler", StandardScaler())
-        ]
-    )
-
-    # Categorical preprocessing
-    categorical_transformer = Pipeline(
-        steps=[
-            ("encoder", OneHotEncoder(
-                handle_unknown="ignore",
-                sparse_output=False
-            ))
-        ]
-    )
-
-    # Combine both
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("numerical", numerical_transformer, numerical_columns),
-            ("categorical", categorical_transformer, categorical_columns)
-        ]
-    )
-
-    # Transform the data
-    X_encoded = preprocessor.fit_transform(X)
-
-    return X_encoded, preprocessor
-
-
-def create_preprocessor(X):
-
-    # Identify column types
-    numerical_columns = X.select_dtypes(
-        include=["int64", "float64"]
-    ).columns
-
-    categorical_columns = X.select_dtypes(
-        include=["object", "category", "bool"]
-    ).columns
-
-    # Numerical:
-    # 1. Missing values -> median
-    # 2. Scale the values
-    numerical_transformer = Pipeline(
-        steps=[
             ("imputer", SimpleImputer(strategy="median")),
             ("scaler", StandardScaler())
         ]
     )
 
-    # Categorical:
-    # 1. Missing values -> most frequent (mode)
-    # 2. One-hot encode
+    # Categorical preprocessing
     categorical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
@@ -140,21 +120,23 @@ def create_preprocessor(X):
     return preprocessor
 
 
+# =========================================================
+# DISTANCE AND SORTING FUNCTIONS
+# =========================================================
+
 def distance(vector_1, vector_2):
-    distance = np.linalg.norm(vector_1 - vector_2)
-    return distance
+    distance_value = np.linalg.norm(vector_1 - vector_2)
+    return distance_value
 
 
 def bubble_sort(distances):
     arr = distances.copy()
-
     n = len(arr)
 
     for i in range(n):
         swapped = False
 
         for j in range(0, n - i - 1):
-
             if arr[j] > arr[j + 1]:
                 arr[j], arr[j + 1] = arr[j + 1], arr[j]
                 swapped = True
@@ -169,7 +151,6 @@ def insertion_sort(distances):
     arr = distances.copy()
 
     for i in range(1, len(arr)):
-
         key = arr[i]
         j = i - 1
 
@@ -217,6 +198,11 @@ def merge(left, right):
 
     return result
 
+
+# =========================================================
+# SELF IMPLEMENTED NORMAL KNN
+# =========================================================
+
 class KNN:
 
     def __init__(self, k=3):
@@ -225,24 +211,17 @@ class KNN:
         self.y_train = None
 
     def fit(self, X_train, y_train):
-        """
-        Store training data and training labels.
-        """
-
+        # Store training data and labels
         self.X_train = X_train
         self.y_train = y_train
-
         return self
 
     def predict_one(self, test_vector):
-        """
-        Predict the class of one test vector.
-        """
 
         distances = []
 
-        # Calculate distance between test vector
-        # and every training vector
+        # Calculate distance from test vector
+        # to every training vector
         for i in range(len(self.X_train)):
 
             dist = distance(
@@ -266,7 +245,7 @@ class KNN:
         for dist, label in k_nearest:
             labels.append(label)
 
-        # Majority voting
+        # Normal KNN: Majority voting
         prediction = max(
             set(labels),
             key=labels.count
@@ -275,9 +254,6 @@ class KNN:
         return prediction
 
     def predict(self, X_test):
-        """
-        Predict classes for all test vectors.
-        """
 
         predictions = []
 
@@ -290,6 +266,11 @@ class KNN:
             predictions.append(prediction)
 
         return predictions
+
+
+# =========================================================
+# MANUAL PERFORMANCE METRICS
+# =========================================================
 
 def accuracy_score(y_true, y_pred):
 
@@ -319,10 +300,7 @@ def precision_per_class(y_true, y_pred, classes):
         true_positive = 0
         false_positive = 0
 
-        for actual, predicted in zip(
-            y_true,
-            y_pred
-        ):
+        for actual, predicted in zip(y_true, y_pred):
 
             if predicted == positive_class:
 
@@ -353,10 +331,7 @@ def recall_per_class(y_true, y_pred, classes):
         true_positive = 0
         false_negative = 0
 
-        for actual, predicted in zip(
-            y_true,
-            y_pred
-        ):
+        for actual, predicted in zip(y_true, y_pred):
 
             if actual == positive_class:
 
@@ -410,11 +385,15 @@ def self_f1_score(y_true, y_pred, classes):
 
         f1_values.append(f1)
 
-    # Macro F1
+    # Macro F1 score
     macro_f1 = sum(f1_values) / len(f1_values)
 
     return macro_f1
 
+
+# =========================================================
+# LIBRARY BASED NORMAL KNN
+# =========================================================
 
 class LibraryKNN:
 
@@ -432,142 +411,212 @@ class LibraryKNN:
     def score(self, X_test, y_test):
         return self.model.score(X_test, y_test)
 
+
+# =========================================================
+# COMPARISON LOOP
+# =========================================================
+
 def loop(X_train_processed, X_test_processed, y_train, y_test):
 
-    k = [1, 2, 3, 4, 5, 6, 7]
+    k_values = [1, 2, 3, 4, 5, 6, 7]
 
     self_accuracy = []
     library_accuracy = []
 
-    self_precision_all = []
-    library_precision_all = []
+    self_precision_results = []
+    self_recall_results = []
+    self_f1_results = []
 
-    self_recall_all = []
-    library_recall_all = []
+    library_precision_results = []
+    library_recall_results = []
+    library_f1_results = []
 
-    self_f1_all = []
-    library_f1_all = []
+    # Execution times
+    self_times = []
+    library_times = []
 
     classes = list(set(y_test))
 
-    for i in k:
+    for k in k_values:
 
-        model = KNN(k=i)
+        # ==========================================
+        # SELF-IMPLEMENTED NORMAL KNN - METRICS
+        # ==========================================
 
-        model.fit(
+        self_model = KNN(k=k)
+
+        self_model.fit(
             X_train_processed,
             y_train
         )
 
-        self_predictions = model.predict(
+        self_predictions = self_model.predict(
             X_test_processed
         )
 
-        # Accuracy
-        accuracy = accuracy_score(
+        # FIX: accuracy_score is a standalone function
+        self_accuracy_value = accuracy_score(
             y_test,
             self_predictions
         )
 
-        self_accuracy.append(accuracy)
-
-        # Precision
         self_precision = precision_per_class(
             y_test,
             self_predictions,
             classes
         )
 
-        self_precision_all.append(self_precision)
-
-        # Recall
         self_recall = recall_per_class(
             y_test,
             self_predictions,
             classes
         )
 
-        self_recall_all.append(self_recall)
-
-        # F1 Score
+        # FIX: Use the existing self_f1_score function
         self_f1 = self_f1_score(
             y_test,
             self_predictions,
             classes
         )
 
-        self_f1_all.append(self_f1)
+        self_accuracy.append(self_accuracy_value)
+        self_precision_results.append(self_precision)
+        self_recall_results.append(self_recall)
+        self_f1_results.append(self_f1)
 
-        model = LibraryKNN(k=i)
+        # ==========================================
+        # SELF-IMPLEMENTED KNN - EXECUTION TIME
+        # ==========================================
 
-        model.fit(
+        self_run_times = []
+
+        for run in range(10):
+
+            start_time = time.perf_counter()
+
+            self_model = KNN(k=k)
+            self_model.fit(
+                X_train_processed,
+                y_train
+            )
+
+            self_model.predict(
+                X_test_processed
+            )
+
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+            self_run_times.append(elapsed_time)
+
+        average_self_time = (
+            sum(self_run_times) / len(self_run_times)
+        )
+
+        self_times.append(average_self_time)
+
+        # ==========================================
+        # LIBRARY NORMAL KNN - METRICS
+        # ==========================================
+
+        library_model = LibraryKNN(k=k)
+
+        library_model.fit(
             X_train_processed,
             y_train
         )
 
-        library_predictions = model.predict(
+        library_predictions = library_model.predict(
             X_test_processed
         )
 
-        # Accuracy
-        accuracy = model.score(
+        library_accuracy_value = library_model.score(
             X_test_processed,
             y_test
         )
 
-        library_accuracy.append(accuracy)
-
-        # Precision - sklearn
-        library_precision_values = precision_score(
+        library_precision = precision_per_class(
             y_test,
             library_predictions,
-            average=None,
-            labels=classes,
-            zero_division=0
+            classes
         )
 
-        library_precision = dict(
-            zip(classes, library_precision_values)
-        )
-
-        library_precision_all.append(library_precision)
-
-        # Recall - sklearn
-        library_recall_values = recall_score(
+        library_recall = recall_per_class(
             y_test,
             library_predictions,
-            average=None,
-            labels=classes,
-            zero_division=0
+            classes
         )
 
-        library_recall = dict(
-            zip(classes, library_recall_values)
-        )
-
-        library_recall_all.append(library_recall)
-
-        # F1 Score - sklearn
-        library_f1 = f1_score(
+        # FIX: Use the same manual F1 calculation
+        library_f1 = self_f1_score(
             y_test,
             library_predictions,
-            average="macro",
-            zero_division=0
+            classes
         )
 
-        library_f1_all.append(library_f1)
+        library_accuracy.append(library_accuracy_value)
+        library_precision_results.append(library_precision)
+        library_recall_results.append(library_recall)
+        library_f1_results.append(library_f1)
+
+        # ==========================================
+        # LIBRARY KNN - EXECUTION TIME
+        # ==========================================
+
+        library_run_times = []
+
+        for run in range(10):
+
+            start_time = time.perf_counter()
+
+            library_model = LibraryKNN(k=k)
+            library_model.fit(
+                X_train_processed,
+                y_train
+            )
+
+            library_model.predict(
+                X_test_processed
+            )
+
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+            library_run_times.append(elapsed_time)
+
+        average_library_time = (
+            sum(library_run_times) / len(library_run_times)
+        )
+
+        library_times.append(average_library_time)
+
+        print("\nK =", k)
+        print("Self Accuracy:", self_accuracy_value)
+        print("Library Accuracy:", library_accuracy_value)
+        print("Self Average Time:", average_self_time, "seconds")
+        print("Library Average Time:", average_library_time, "seconds")
 
     return (
         self_accuracy,
         library_accuracy,
-        self_precision_all,
-        library_precision_all,
-        self_recall_all,
-        library_recall_all,
-        self_f1_all,
-        library_f1_all,
-        k
+        k_values,
+
+        self_precision_results,
+        self_recall_results,
+        self_f1_results,
+
+        library_precision_results,
+        library_recall_results,
+        library_f1_results,
+
+        self_times,
+        library_times
     )
+
+
+# =========================================================
+# PLOT ACCURACY
+# =========================================================
 
 def plot(self_accuracy, library_accuracy, k_values):
 
@@ -593,12 +642,15 @@ def plot(self_accuracy, library_accuracy, k_values):
     plt.title("Self Implemented KNN vs Library KNN")
 
     plt.xticks(k_values)
-
     plt.legend()
-
     plt.grid(True)
 
     plt.show()
+
+
+# =========================================================
+# MAIN PROGRAM
+# =========================================================
 
 if __name__ == "__main__":
 
@@ -616,20 +668,10 @@ if __name__ == "__main__":
     print("\nTarget:")
     print(y)
 
+    # Split data
     X_train, X_test, y_train, y_test = splitdata(x, y)
 
-    print("\nX_train:")
-    print(X_train)
-
-    print("\nX_test:")
-    print(X_test)
-
-    print("\ny_train:")
-    print(y_train)
-
-    print("\ny_test:")
-    print(y_test)
-
+    # Preprocess data
     preprocessor = create_preprocessor(X_train)
 
     X_train_processed = preprocessor.fit_transform(X_train)
@@ -641,19 +683,27 @@ if __name__ == "__main__":
     print("\nProcessed X_test:")
     print(X_test_processed)
 
+    # Convert labels to NumPy arrays
     y_train = y_train.to_numpy()
     y_test = y_test.to_numpy()
 
+    # Run comparison
     (
         self_accuracy,
         library_accuracy,
-        self_precision_all,
-        library_precision_all,
-        self_recall_all,
-        library_recall_all,
-        self_f1_all,
-        library_f1_all,
-        k_values
+        k_values,
+
+        self_precision_results,
+        self_recall_results,
+        self_f1_results,
+
+        library_precision_results,
+        library_recall_results,
+        library_f1_results,
+
+        self_times,
+        library_times
+
     ) = loop(
         X_train_processed,
         X_test_processed,
@@ -678,26 +728,45 @@ if __name__ == "__main__":
     # Print Precision
     print("\nSELF IMPLEMENTED PRECISION:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", self_precision_all[i])
+        print("K =", k_values[i], ":", self_precision_results[i])
 
     print("\nLIBRARY BASED PRECISION:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", library_precision_all[i])
+        print("K =", k_values[i], ":", library_precision_results[i])
 
     # Print Recall
     print("\nSELF IMPLEMENTED RECALL:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", self_recall_all[i])
+        print("K =", k_values[i], ":", self_recall_results[i])
 
     print("\nLIBRARY BASED RECALL:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", library_recall_all[i])
+        print("K =", k_values[i], ":", library_recall_results[i])
 
     # Print F1 Score
     print("\nSELF IMPLEMENTED MACRO F1 SCORE:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", self_f1_all[i])
+        print("K =", k_values[i], ":", self_f1_results[i])
 
     print("\nLIBRARY BASED MACRO F1 SCORE:")
     for i in range(len(k_values)):
-        print("K =", k_values[i], ":", library_f1_all[i])
+        print("K =", k_values[i], ":", library_f1_results[i])
+
+    # Print Execution Times
+    print("\nSELF IMPLEMENTED EXECUTION TIMES:")
+    for i in range(len(k_values)):
+        print(
+            "K =", k_values[i],
+            ":",
+            self_times[i],
+            "seconds"
+        )
+
+    print("\nLIBRARY BASED EXECUTION TIMES:")
+    for i in range(len(k_values)):
+        print(
+            "K =", k_values[i],
+            ":",
+            library_times[i],
+            "seconds"
+        )
