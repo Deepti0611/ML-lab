@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import time
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
@@ -142,29 +143,168 @@ def score(prediction,Y_test):
             sum=sum+1
     score=sum/len(prediction)
     return score
+def confusion_values(prediction,Y_test,positive_class):
+    TP=0
+    FP=0
+    FN=0
+    for i in range(len(prediction)):
+        actual=Y_test.iloc[i]
+        predicted=prediction[i]
+        if predicted==positive_class and actual==positive_class:
+            TP+=1
+        elif predicted==positive_class and actual!=positive_class:
+            FP+=1
+        elif predicted!=positive_class and actual==positive_class:
+            FN+=1
+        return TP,FP,FN
+def precision_score(prediction,Y_test,positive_class):
+        TP,FP,FN=confusion_values(prediction,Y_test,positive_class)
+        if TP+FP==0:
+            return 0
+        precision=TP/(TP+FP)
+        return precision
+def recall_score(prediction,Y_test,positive_class):
+        TP,FP,FN=confusion_values(prediction,Y_test,positive_class)
+        if TP+FN==0:
+             return 0  
+        recall=TP/(TP+FN)
+        return recall
+def f1_score(prediction,Y_test,positive_class):
+        precision=precision_score(prediction,Y_test,positive_class)
+        recall=recall_score(prediction,Y_test,positive_class)
+        if precision+recall==0:
+            return 0
+        f1=2*(precision*recall)/(precision+recall)
+        return f1
+def comparison(X_train, X_test, Y_train, Y_test):
 
-def comparison(X_train,X_test,Y_train,Y_test):
+    # Custom KNN metrics
     my_accuracies = []
-    sklearn_accuracies = [] 
-    kval=[1,2,3,4,5,6,7]
-    for k in  kval:
-        predictions = predict(X_train,Y_train,X_test,k)
+    Precision_A = []
+    Precision_B = []
+    Recall_A = []
+    Recall_B = []
+    f1_a = []
+    f1_b = []
 
-        accuracy = score(predictions,Y_test )
+    # Sklearn KNN metrics
+    sklearn_accuracies = []
+    sklearn_Precision_A = []
+    sklearn_Precision_B = []
+    sklearn_Recall_A = []
+    sklearn_Recall_B = []
+    sklearn_f1_a = []
+    sklearn_f1_b = []
 
+    kval = [1, 2, 3, 4, 5, 6, 7]
+
+    for k in kval:
+
+        # ==========================================
+        # CUSTOM NORMAL KNN
+        # ==========================================
+
+        predictions = predict(X_train, Y_train, X_test, k)
+
+        # Calculate custom metrics
+        accuracy = score(predictions, Y_test)
+
+        precision_A = precision_score(predictions, Y_test, "A")
+        precision_B = precision_score(predictions, Y_test, "B")
+
+        recall_A = recall_score(predictions, Y_test, "A")
+        recall_B = recall_score(predictions, Y_test, "B")
+
+        f1_A = f1_score(predictions, Y_test, "A")
+        f1_B = f1_score(predictions, Y_test, "B")
+
+        # Store custom metrics
         my_accuracies.append(accuracy)
-        model = KNeighborsClassifier(n_neighbors=k)
+        Precision_A.append(precision_A)
+        Precision_B.append(precision_B)
+        Recall_A.append(recall_A)
+        Recall_B.append(recall_B)
+        f1_a.append(f1_A)
+        f1_b.append(f1_B)
 
-        model.fit(X_train,Y_train)
 
-        sklearn_accuracy = model.score(X_test,Y_test)
+        # ==========================================
+        # SKLEARN NORMAL KNN
+        # ==========================================
 
+        model = KNeighborsClassifier(
+            n_neighbors=k,
+            weights="uniform"
+        )
+
+        model.fit(X_train, Y_train)
+
+        library_predictions = model.predict(X_test)
+
+        # Calculate library metrics
+        sklearn_accuracy = model.score(X_test, Y_test)
+
+        sklearn_precision_A = precision_score(
+            library_predictions, Y_test, "A"
+        )
+        sklearn_precision_B = precision_score(
+            library_predictions, Y_test, "B"
+        )
+
+        sklearn_recall_A = recall_score(
+            library_predictions, Y_test, "A"
+        )
+        sklearn_recall_B = recall_score(
+            library_predictions, Y_test, "B"
+        )
+
+        sklearn_f1_A = f1_score(
+            library_predictions, Y_test, "A"
+        )
+        sklearn_f1_B = f1_score(
+            library_predictions, Y_test, "B"
+        )
+
+        # Store library metrics
         sklearn_accuracies.append(sklearn_accuracy)
+        sklearn_Precision_A.append(sklearn_precision_A)
+        sklearn_Precision_B.append(sklearn_precision_B)
+        sklearn_Recall_A.append(sklearn_recall_A)
+        sklearn_Recall_B.append(sklearn_recall_B)
+        sklearn_f1_a.append(sklearn_f1_A)
+        sklearn_f1_b.append(sklearn_f1_B)
+
+
+    # ==========================================
+    # CREATE FINAL RESULTS TABLE
+    # ==========================================
+
     results = pd.DataFrame({
-    "My KNN Accuracy": my_accuracies,
-    "Sklearn KNN Accuracy": sklearn_accuracies
-})
-    return results,my_accuracies,sklearn_accuracies
+        "K": kval,
+
+        "Custom Accuracy": my_accuracies,
+        "Library Accuracy": sklearn_accuracies,
+
+        "Custom Precision A": Precision_A,
+        "Library Precision A": sklearn_Precision_A,
+
+        "Custom Precision B": Precision_B,
+        "Library Precision B": sklearn_Precision_B,
+
+        "Custom Recall A": Recall_A,
+        "Library Recall A": sklearn_Recall_A,
+
+        "Custom Recall B": Recall_B,
+        "Library Recall B": sklearn_Recall_B,
+
+        "Custom F1 A": f1_a,
+        "Library F1 A": sklearn_f1_a,
+
+        "Custom F1 B": f1_b,
+        "Library F1 B": sklearn_f1_b
+    })
+
+    return results, my_accuracies, sklearn_accuracies
 def plot(my_accuracies,sklearn_accuracies,kval):
     plt.plot(
     kval,
@@ -198,3 +338,4 @@ result,my_accuracies,sklearn_accuracies=comparison(X_train,X_test,Y_train,Y_test
 print("\nComparison of Custom KNN and Sklearn KNN:")
 print(result)
 plot(my_accuracies,sklearn_accuracies,[1,2,3,4,5,6,7])
+
