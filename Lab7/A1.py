@@ -12,6 +12,9 @@ def probability(df):
 def entropy(prob):
     ent=np.sum(-prob*np.log2(prob)) # calculate the entropy of the probability distribution
     return ent
+def gini(prob):
+    gini=1-np.sum(prob**2) # calculate the gini index of the probability distribution
+    return gini
     
 df=load_data() # load the data
 print(df) # print the selected samples
@@ -19,3 +22,5 @@ prob=probability(df) # calculate the probability of each person
 print(prob) # print the probabilities
 ent=entropy(prob) # calculate the entropy of the probability distribution
 print(ent) # print the entropy
+gin=gini(prob) # calculate the gini index of the probability distribution
+print(gin) # print the gini index
