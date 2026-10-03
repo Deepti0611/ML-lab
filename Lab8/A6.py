@@ -1,4 +1,5 @@
 import math
+import numpy as np
 def summation(inputs,w,b):
     weighted_sum = sum(i * w for i, w in zip(inputs, w)) + b
     return weighted_sum
@@ -49,7 +50,14 @@ def perceptron(A,B,C,D,y,w0,w1,w2,w3,w4,n):
     plt.grid()
     plt.show()'''
 print("Perceptron Learning Algorithm")
-w0,w1,w2,w3,w4=10,0.2,-0.75,0.1,-0.2
+def matrix_inverse(x,y):
+    x_pseudo_inverse = np.linalg.pinv(x)
+    weights = np.dot(x_pseudo_inverse, y)
+    return weights
+    
+
+    
+w0,w1,w2,w3,w4=1,0.2,-0.75,0.1,-0.2
 candies=[20,16,27,19,24,22,15,18,21,16]
 mangoes=[6,3,6,1,4,1,4,4,1,2]
 milk=[2,6,2,2,2,5,2,2,4,4]
@@ -62,6 +70,26 @@ print(f"Final weights: w0={w0}, w1={w1}, w2={w2}, w3={w3}, w4={w4}".format(w0, w
 print(f"Number of epochs: {epochs[-1]}")
 #plot(err,epochs)
 
+X = np.array([
+    [1, 20, 6, 2, 386],
+    [1, 16, 3, 6, 289],
+    [1, 27, 6, 2, 393],
+    [1, 19, 1, 2, 110],
+    [1, 24, 4, 2, 280],
+    [1, 22, 1, 5, 167],
+    [1, 15, 4, 2, 271],
+    [1, 18, 4, 2, 274],
+    [1, 21, 1, 4, 148],
+    [1, 16, 2, 4, 198]
+])
+
+y = np.array([1,1,1,0,1,0,1,1,0,0])
+# Matrix Pseudo-Inverse Method
+W = matrix_inverse(X, y)
+
+print("\nMatrix Pseudo-Inverse Method")
+print("Weights:")
+print(W)
 
 
     
