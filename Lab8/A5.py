@@ -38,35 +38,54 @@ def perceptron(A,B,y,w0,w1,w2,n,activation_function):
         if sse<=0.002:
             break
     return w0,w1,w2,err,epochs
-'''def plot(err,epochs):
+def plot(err,epochs):
     import matplotlib.pyplot as plt
     plt.plot(epochs, err)
     plt.xlabel('Epochs')
     plt.ylabel('Error')
     plt.title('Error vs Epochs')
     plt.grid()
-    plt.show()'''
+    plt.show()
+print("A1--------------")
 print("Perceptron Learning Algorithm")
+
 w0,w1,w2=10,0.2,-0.75
 A=[0,0,1,1]
 B=[0,1,0,1]
-y=[0,0,0,1]
+y=[0,1,1,0]
 n=0.05
+W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,n,step)
+print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
+print(f"Number of epochs: {epochs[-1]}")
+plot(err,epochs)
+
+print("A2--------------")
 W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,n,bipolar)
 print("BIPOLAR ACTIVATION FUNCTION")
 print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
-print(f"Number of epochs: {epochs[-1]}",epochs[-1])
+print(f"Number of epochs: {epochs[-1]}")
 
 W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,n,sigmoid)
 print("SIGMOID ACTIVATION FUNCTION")
 print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
-print(f"Number of epochs: {epochs[-1]}",epochs[-1])
+print(f"Number of epochs: {epochs[-1]}")
 
 W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,n,relu)
 print("RELU ACTIVATION FUNCTION")
 print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
-print(f"Number of epochs: {epochs[-1]}",epochs[-1])
-#(err,epochs)
+print(f"Number of epochs: {epochs[-1]}")
+
+print("A3--------------")
+n=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.9,1]
+for i in n:
+    w0,w1,w2=10,0.2,-0.75
+    A=[0,0,1,1]
+    B=[0,1,0,1]
+    y=[0,0,0,1]
+    W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,i,step)
+    print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
+    print (f"Learning rate: {i}, Number of epochs: {epochs[-1]}")
+
 
 
 

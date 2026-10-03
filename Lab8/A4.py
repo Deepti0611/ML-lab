@@ -54,8 +54,8 @@ for i in n:
     A=[0,0,1,1]
     B=[0,1,0,1]
     y=[0,0,0,1]
-    w0,w1,w2,err,epochs=perceptron(A,B,y,w0,w1,w2,i)
-    print(f"Final weights: w0={w0}, w1={w1}, w2={w2}".format(w0, w1, w2))
+    W0,W1,W2,err,epochs=perceptron(A,B,y,w0,w1,w2,i)
+    print(f"Final weights: w0={W0}, w1={W1}, w2={W2}".format(W0, W1, W2))
     print (f"Learning rate: {i}, Number of epochs: {epochs[-1]}")
 
    
