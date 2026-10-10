@@ -1,32 +1,31 @@
-from sklearn.datasets import load_digits
-from sklearn.linear_model import Perceptron
-X, y = load_digits(return_X_y=True)
-clf = Perceptron(tol=1e-3, random_state=0)
-clf.fit(X, y)
-clf.score(X, y)
-
-from sklearn.datasets import load_iris
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import uniform
-iris = load_iris()
-logistic = LogisticRegression(solver='saga', tol=1e-2, max_iter=200,
-                              random_state=0)
-distributions = dict(C=uniform(loc=0, scale=4),
-                     l1_ratio=[0, 1])
-clf = RandomizedSearchCV(logistic, distributions, random_state=0)
-search = clf.fit(iris.data, iris.target)
-search.best_params_
-
 import pandas as pd
 from sklearn.linear_model import Perceptron
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import uniform, randint
-def load_dataset(file_path):
+from scipy.stats import uniform
+def load_dataset():
     df = pd.read_csv("features.csv")
     y = df["person_id"]
     X = df.drop(columns=["person_id", "image_name"])
     return X, y
-def tune_p(X,y):
-    clf = Perceptron(tol=1e-3, random_state=0)
+def tune_perceptron(X, y):
+    perceptron = Perceptron(random_state=0)
+    distributions = {"alpha": uniform(loc=0.0001, scale=0.01), "tol": uniform(loc=0.0001, scale=0.01), "max_iter": [100, 500, 1000, 2000]}
+    clf = RandomizedSearchCV(perceptron,distributions,n_iter=10,cv=5,random_state=0)
+    search = clf.fit(X, y)
+    return search
+def tune_mlp(X, y):
+    mlp = MLPClassifier(random_state=1)
+    distributions = {"hidden_layer_sizes": [(10,), (15,), (20,), (50,), (10, 10)],"activation": ["relu", "tanh", "logistic"],"solver": ["adam", "lbfgs"], "alpha": uniform(loc=0.0001, scale=0.01),"max_iter": [1000,2000,5000]}
+    clf = RandomizedSearchCV( mlp,distributions, n_iter=10,cv=5,random_state=0)
+    search = clf.fit(X, y)
+    return search
+X,y=load_dataset()
+perceptron_search = tune_perceptron(X, y)
+mlp_search = tune_mlp(X, y)
+print("Perceptron Best Parameters:", perceptron_search.best_params_)
+print("Perceptron Best CV Accuracy:", perceptron_search.best_score_)
+print("Perceptron Best Model:", perceptron_search.best_estimator_)
+print("\nMLP Best Parameters:", mlp_search.best_params_)
+print("MLP Best CV Accuracy:", mlp_search.best_score_)
+print("MLP Best Model:", mlp_search.best_estimator_)
