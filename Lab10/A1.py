@@ -55,11 +55,11 @@ print("\n")
 print("STACKING CLASSIFIER RESULTS")
 
 print(
-    f"{'Final Estimator':<25}"
-    f"{'Accuracy':<15}"
-    f"{'Precision':<15}"
-    f"{'Recall':<15}"
-    f"{'F1 Score':<15}"
+    f"{'Final Estimator'}"
+    f"{'Accuracy'}"
+    f"{'Precision'}"
+    f"{'Recall':}"
+    f"{'F1 Score'}"
 )
 for result in results:
     print(
